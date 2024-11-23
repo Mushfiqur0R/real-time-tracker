@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase + Leaflet.js Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+    <div id="map" style="height: 600px; width: 100%;"></div>
+    <script type="module">
+        // Import Firebase modules
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+        // Your Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBvq_7iYKJjjU2DC4zsldKaHgpn82AK_H8",
+            authDomain: "arduino-gps-tracker-3b47b.firebaseapp.com",
+            databaseURL: "https://arduino-gps-tracker-3b47b-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "arduino-gps-tracker-3b47b",
+            storageBucket: "arduino-gps-tracker-3b47b.firebasestorage.app",
+            messagingSenderId: "1037089914294",
+            appId: "1:1037089914294:web:bb648a1a3a0c50df739517",
+            measurementId: "G-W9J227E2G1"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // Initialize Leaflet.js map
+        const map = L.map('map').setView([23.808098, 90.360420], 10);
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: "&copy; OpenStreetMap contributors"
+        }).addTo(map);
+
+        // Reference to your database
+        const markersRef = ref(db, '/'); // Reference to the root of your database
+        let currentMarker = null; // To keep track of the current marker
+
+        // Listen for data updates in Firebase
+        onValue(markersRef, (snapshot) => {
+            const data = snapshot.val(); // Get JSON data
+            
+            if (!data) return; // Exit if there's no data
+            
+            // Find the latest data entry
+            const keys = Object.keys(data);
+            const latestKey = keys[keys.length - 1]; // Assuming latest entry is the last key
+            const latestData = data[latestKey];
+            const lat = parseFloat(latestData.Lat);
+            const lng = parseFloat(latestData.Lng);
+
+            // Remove the existing marker if it exists
+            if (currentMarker) {
+                map.removeLayer(currentMarker);
+            }
+
+            // Add the new marker
+            currentMarker = L.marker([lat, lng])
+                .addTo(map)
+                .bindPopup(`Lat: ${lat}, Lng: ${lng}`)
+                .openPopup();
+
+            // Center the map to the latest marker's location
+            map.setView([lat, lng], 15);
+        });
+    </script>
+</body>
+</html>
